@@ -1,0 +1,30 @@
+name: API CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "api/**"
+      - "timelib/**"
+      - ".github/workflows/api-ci.yaml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "api/**"
+      - "timelib/**"
+      - ".github/workflows/api-ci.yaml"
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run build script
+        run: ./build/build.sh

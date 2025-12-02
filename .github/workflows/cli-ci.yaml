@@ -1,0 +1,40 @@
+name: CLI CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "cli/**"
+      - ".github/workflows/cli-ci.yaml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "cli/**"
+      - ".github/workflows/cli-ci.yaml"
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cli
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build API image (dependency for E2E tests)
+        working-directory: api
+        run: |
+          docker build --rm \
+            --file build/Dockerfile \
+            --build-arg BUILD_VER=ci \
+            --build-arg BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
+            --build-arg BUILD_COMMIT=${{ github.sha }} \
+            --target runtime \
+            --tag time-api:latest \
+            ..
+
+      - name: Run build script
+        run: ./build/build.sh
