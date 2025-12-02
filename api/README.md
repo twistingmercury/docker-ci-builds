@@ -128,6 +128,17 @@ Tests fall into two categories:
 
 The build script runs both automatically, so you don't have to think about it.
 
+### Local Module Dependencies
+
+The API imports timelib from this same repository. The Dockerfile handles this by:
+
+1. Copying timelib into the build context
+2. Using `go mod edit -replace` to point to the local copy
+3. Running `go mod tidy` to update checksums
+
+This is why the build script uses the parent directory as build context - it needs
+access to both api/ and timelib/ directories.
+
 ### Versioning
 
 We use git tag-based versioning. The build script pulls version metadata from

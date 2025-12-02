@@ -13,10 +13,16 @@ ARG BUILD_COMMIT=unknown
 
 WORKDIR /workspace
 
-COPY go.mod go.sum ./
-RUN go mod download
+# Copy timelib first (dependency)
+COPY timelib/ /workspace/timelib/
 
-COPY . .
+# Copy api module files and source
+COPY api/go.mod api/go.sum ./
+COPY api/ .
+
+# Tell Go where to find timelib locally and update checksums
+RUN go mod edit -replace github.com/twistingmercury/docker-ci-build/timelib=/workspace/timelib
+RUN go mod tidy
 
 ARG LD_FLAGS="-s -w \
     -X 'main.Version=${BUILD_VER}' \

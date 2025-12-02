@@ -2,9 +2,9 @@
 
 > **Maturity Level**: Emerging - Demonstration project for Docker CI patterns
 
-This project shows you two ways to set up Docker-based CI builds - one for services,
-one for CLI tools. The example apps are dead simple on purpose. We're here to talk
-about CI patterns, not application code.
+This project shows you three ways to set up Docker-based CI builds - for services,
+CLI tools, and libraries. The example apps are dead simple on purpose. We're here
+to talk about CI patterns, not application code.
 
 ## Why Docker for CI?
 
@@ -18,9 +18,9 @@ doesn't own your build process. That buys you:
 - **Reproducibility**: Your build environment is code, not some runner config
   you have to remember to update.
 
-## Two CI Patterns
+## Three CI Patterns
 
-We've got two distinct patterns here, depending on what you're building.
+We've got three distinct patterns here, depending on what you're building.
 
 ### Service Pattern (api/)
 
@@ -46,14 +46,25 @@ distribute as a file:
 
 See [cli/README.md](cli/README.md) for how it works.
 
+### Library Pattern (timelib/)
+
+This one's for Go packages that other code imports - no binary, no container,
+just code that needs to compile and pass tests:
+
+1. Run tests inside Docker
+2. That's it. No artifacts, no exports, no E2E.
+
+The simplest pattern of the three. Check out
+[timelib/README.md](timelib/README.md) for the details.
+
 ## Key Differences
 
-| Aspect       | Service Pattern          | CLI Pattern        |
-| ------------ | ------------------------ | ------------------ |
-| Artifact     | Docker image             | Binary files       |
-| Export       | None (image is artifact) | `--output` to host |
-| E2E target   | Running container        | Exported binary    |
-| Distribution | Container registry       | File downloads     |
+| Aspect       | Service           | CLI              | Library         |
+| ------------ | ----------------- | ---------------- | --------------- |
+| Artifact     | Docker image      | Binary files     | None            |
+| Export       | None              | `--output`       | None            |
+| E2E tests    | Running container | Exported binary  | None (unit only)|
+| Distribution | Registry          | File downloads   | Go modules      |
 
 ## Quick Start
 
@@ -68,6 +79,28 @@ Build and test the CLI:
 ```bash
 cd cli && make build
 ```
+
+Test the library:
+
+```bash
+cd timelib && make build
+```
+
+## Local Development
+
+The repository uses a `go.work` file for local development across modules.
+This lets you modify timelib and immediately use those changes in the API
+without publishing the module.
+
+The go.work file includes all three modules:
+
+- api/
+- cli/
+- timelib/
+
+When running `go build` or `go test` locally, Go automatically uses the
+local versions. Docker builds don't use go.work - they handle dependencies
+explicitly in each Dockerfile.
 
 ## Prerequisites
 
