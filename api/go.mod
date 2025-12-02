@@ -5,6 +5,7 @@ go 1.25.4
 require (
 	github.com/gin-gonic/gin v1.11.0
 	github.com/stretchr/testify v1.11.1
+	github.com/twistingmercury/docker-ci-build/timelib v0.0.0
 	github.com/twistingmercury/heartbeat v1.0.0
 )
 

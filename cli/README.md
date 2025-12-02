@@ -87,8 +87,10 @@ something fresh.
 - Unit tests run inside the Dockerfile during build
 - E2E tests run against the exported binary, not a fresh build
 - The export stage uses `scratch` as a base (no OS, just files)
-- E2E tests need the time-api service running, which is why we use docker
-  compose
+- E2E tests need the time-api service running - you must build the API project
+  first (`cd ../api && ./build/build.sh`) before running CLI E2E tests
+- The docker-compose.yaml references the `time-api:latest` image, so it must
+  exist locally
 
 ## Development Considerations
 

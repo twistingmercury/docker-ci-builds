@@ -20,7 +20,7 @@ build_api(){
         --build-arg BUILD_COMMIT="${BUILD_COMMIT}" \
         --target runtime \
         --tag "${IMAGE_NAME}:${IMAGE_TAG}" \
-        "${PROJ_ROOT}"
+        "$(cd "${PROJ_ROOT}/.." && pwd)"
 
    
     printf "\nImage: %s:%s\n" "${IMAGE_NAME}" "${IMAGE_TAG}"
