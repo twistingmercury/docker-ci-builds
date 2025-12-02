@@ -1,84 +1,94 @@
-# CLI Tool Build Example
+# CLI Tool - CLI CI Pattern Example
 
-> **Maturity Level**: Emerging - Demonstration project for containerized Go build workflows
+> **Maturity Level**: Emerging - Demonstration of Docker CI for CLI tools
 
-A demonstration of building and testing a Go CLI application entirely within Docker containers.
+A minimal CLI tool that shows how to do Docker-based CI for command-line apps.
+The CLI itself is trivial - we're focused on the build and test workflow, not
+the application code.
 
-## Why containerized builds?
+## The CLI CI Pattern
 
-The short answer: portability and consistency.
+When you're building CLI tools, your CI workflow looks different from services.
+You need to get binaries OUT of the container:
 
-When your build logic lives in a Dockerfile and shell scripts, your CI
-configuration becomes almost trivial. It's essentially "checkout code, run
-docker build, upload artifacts." Switching from GitHub Actions to GitLab CI to
-Azure DevOps? You're not rewriting platform-specific build steps each time.
-The CI platform just orchestrates - it doesn't own your build process.
+1. Build binaries for multiple platforms inside Docker
+2. Run unit tests during the build
+3. Export binaries to the host filesystem using `--output`
+4. Run E2E tests against the exported binary in a separate container
+5. If everything passes, your binaries are ready to ship
 
-This also means developers run the exact same build locally as CI does. No more
-debugging why something works in CI but fails on your machine, or vice versa.
-The build environment is defined in the Dockerfile, not dependent on whatever
-tools happen to be installed on the runner or your laptop.
-
-The build logic stays in files you control (Dockerfile, Makefile, scripts)
-rather than scattered across CI-specific YAML. That's less lock-in and more
-flexibility when your needs inevitably change.
+This is different from service patterns where the image itself is what you deploy.
+Here, you're extracting files.
 
 ## Usage
 
-Build all platform binaries with a single command:
+Build all platform binaries:
 
 ```bash
 make build
 ```
 
-Binaries are output to `.bin/amd64/{darwin,linux,windows}/`.
+You'll find the binaries in `.bin/amd64/{darwin,linux,windows}/`.
 
 ## How it works
 
-The build process runs entirely in Docker using a multi-stage Dockerfile:
+### Multi-stage Dockerfile with Export
 
-1. **Builder stage**: Compiles Go binaries for darwin, linux, and windows (amd64). Runs unit tests before compilation.
-2. **E2E tests stage**: Copies the linux binary and runs end-to-end tests against it inside the container.
-3. **Export stage**: Exports all binaries to the host filesystem.
+The Dockerfile (`build/Dockerfile`) has two stages:
 
-The build script (`build/build.sh`) orchestrates this by running the e2e_tests target first. If tests pass, it proceeds to the export target. This ensures binaries are only exported after verification.
+- **builder**: Downloads dependencies, runs unit tests, cross-compiles binaries
+  for darwin, linux, and windows (all amd64)
+- **export**: A `scratch` stage that just copies binaries for extraction
 
-Version information (version, build date, git commit) is embedded into binaries
-via ldflags during compilation.
+The `--output` flag is what gets files out of the container and onto your host:
 
-## CI Build Flow
-
-The following diagram shows the CI pipeline triggered by GitHub Actions:
-
-```mermaid
-flowchart TD
-    A[Push/PR to main or develop] --> B[Checkout code]
-    B --> C[Extract build metadata]
-    C --> D[docker build --target e2e_tests]
-
-    subgraph Docker Build
-        D --> E[Builder stage]
-        E --> F[Download dependencies]
-        F --> G[Run unit tests]
-        G --> H[Build binaries]
-        H --> I[E2E tests stage]
-        I --> J[Copy linux binary]
-        J --> K[Run E2E tests]
-    end
-
-    K --> L{Tests pass?}
-    L -->|Yes| M[docker build --target export]
-    M --> N[Export binaries to .bin/]
-    N --> O[Upload artifacts]
-    L -->|No| P[Build fails]
+```bash
+docker build --target export --output .bin/ .
 ```
+
+### Cross-compilation
+
+Go makes cross-compilation pretty straightforward with environment variables:
+
+```dockerfile
+RUN CGO_ENABLED=0 GOARCH=amd64 GOOS=darwin go build ...
+RUN CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build ...
+RUN CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build ...
+```
+
+### Build Script
+
+The build script (`build/build.sh`) orchestrates two things:
+
+1. Export binaries via `docker build --target export --output`
+2. Run E2E tests via docker-compose
+
+Build metadata (version, date, commit) gets passed as build args.
+
+### Docker Compose E2E Tests
+
+The `tests/docker-compose.yaml` orchestrates E2E testing:
+
+- Starts the `time-api` service (from the api/ project)
+- Builds a test container that includes the exported linux binary
+- Tests the CLI against the running API
+
+The E2E test container copies the binary from `.bin/amd64/linux/`:
+
+```dockerfile
+COPY .bin/amd64/linux/* /go/bin/
+```
+
+This is important: you're testing the actual compiled binary, not rebuilding
+something fresh.
 
 ## Key Considerations
 
-- E2E tests run against the linux binary only, since tests execute inside the container
-- Unit tests run during the build stage before binary compilation
-- All binaries are built for amd64 architecture
-- The E2E tests module (`tests/e2e/`) is separate from the main module to keep test dependencies isolated
+- Unit tests run inside the Dockerfile during build
+- E2E tests run against the exported binary, not a fresh build
+- The export stage uses `scratch` as a base (no OS, just files)
+- E2E tests need the time-api service running, which is why we use docker
+  compose
 
 ## Development Considerations
 
@@ -92,41 +102,39 @@ This builds all binaries and runs both unit and E2E tests.
 
 ### Building and running
 
-The Makefile wraps the build script with proper version metadata:
+The Makefile wraps the build script:
 
 ```bash
 # Build with automatic version detection from git tags
 make build
 
-# Or run the build script directly with custom values
-BUILD_VER=v1.0.0 BUILD_DATE=2025-01-01 BUILD_COMMIT=abc12345 ./build/build.sh
+# Or run the build script directly if you want custom values
+BUILD_VER=v1.0.0 BUILD_DATE=2025-01-01 BUILD_COMMIT=abc123 ./build/build.sh
 ```
 
 ### Testing
 
-Tests are integrated into the Docker build:
+Tests are baked into the Docker build:
 
 - **Unit tests**: Run in the builder stage via `go test`
-- **E2E tests**: Run in a separate stage against the compiled linux binary
+- **E2E tests**: Run in a separate container against the compiled linux binary
 
-The build fails fast if any tests fail.
+If any tests fail, the build fails. No half-broken artifacts.
 
 ### Versioning
 
-This project uses git tag-based versioning. The build process extracts:
+We use git tag-based versioning. The build script extracts:
 
 - Version from `git describe --tags`
 - Build date from the current date
 - Commit hash from `git rev-parse`
 
-These values are embedded into binaries and displayed via the `version` command.
-
-### CI/CD
-
-GitHub Actions runs the build on pushes and pull requests to main and develop branches. Artifacts are uploaded and retained for 30 days.
+These values get embedded into binaries via ldflags.
 
 ### Prerequisites
 
-- Docker 20.10+ - [Installation instructions](https://docs.docker.com/get-docker/)
+- Docker 20.10+ -
+  [Installation instructions](https://docs.docker.com/get-docker/)
+- Docker Compose v2+ (included with Docker Desktop)
 - GNU Make 3.81+
 - Git (for version metadata)

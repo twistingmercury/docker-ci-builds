@@ -12,8 +12,8 @@ BUILD_DATE="${BUILD_DATE:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}"
 BUILD_COMMIT="${BUILD_COMMIT:-$(git -C "${PROJ_ROOT}" rev-parse --short HEAD 2>/dev/null || echo 'unknown')}"
 
 build_api(){
-     printf "\n=== starting image build ===\n"
-    docker build \
+    printf "\n=== starting image build ===\n"
+    docker build --rm --no-cache \
         --file "${SCRIPT_DIR}/Dockerfile" \
         --build-arg BUILD_VER="${BUILD_VER}" \
         --build-arg BUILD_DATE="${BUILD_DATE}" \

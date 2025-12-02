@@ -91,24 +91,6 @@ print_build_info() {
     log_info "  Image Tag:    ${IMAGE_NAME}:${BUILD_VER}"
 }
 
-run_e2e_tests() {
-    log_info "Running E2E tests (target: e2e_tests)..."
-
-    if ! docker build \
-        -f="${DOCKERFILE_PATH}" \
-        --build-arg BUILD_VER="${BUILD_VER}" \
-        --build-arg BUILD_DATE="${BUILD_DATE}" \
-        --build-arg BUILD_COMMIT="${BUILD_COMMIT}" \
-        --target e2e_tests \
-        "${PROJ_ROOT}"; then
-        log_error "E2E tests failed"
-        return 1
-    fi
-
-    log_success "E2E tests passed"
-    return 0
-}
-
 export_binaries() {
     log_info "Exporting binaries (target: export)..."
 
@@ -129,6 +111,22 @@ export_binaries() {
     return 0
 }
 
+
+run_e2e_tests() {
+    log_info "Running E2E tests..."
+
+    if ! docker compose -f "${PROJ_ROOT}/tests/docker-compose.yaml" up \
+        --build \
+        --exit-code-from e2e-tests; then
+        log_error "E2E tests failed"
+        docker compose -f "${PROJ_ROOT}/tests/docker-compose.yaml" down > /dev/null 2>&1
+        return 1
+    fi
+
+    docker compose -f "${PROJ_ROOT}/tests/docker-compose.yaml" down > /dev/null 2>&1
+    log_success "E2E tests passed"
+    return 0
+}
 #---------------------------------------------------------------
 # Main Entry Point
 #---------------------------------------------------------------
@@ -142,13 +140,14 @@ main() {
 
     print_build_info
 
-    if ! run_e2e_tests; then
-        log_error "Build aborted due to test failure"
+    if ! export_binaries; then
+        log_error "Build failed during binary export"
         return 1
     fi
 
-    if ! export_binaries; then
-        log_error "Build failed during binary export"
+
+    if ! run_e2e_tests; then
+        log_error "Build aborted due to test failure"
         return 1
     fi
 

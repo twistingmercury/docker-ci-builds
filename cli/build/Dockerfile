@@ -22,23 +22,7 @@ RUN CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build --ldflags "${LD_FLAGS}" -o /o
 RUN CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build --ldflags "${LD_FLAGS}" -o /out/amd64/windows/cli-tool.exe ./cmd/main.go
 
 
-#---------------------------------------------------------------
-FROM golang:1.25-alpine AS e2e_tests
-
-WORKDIR /e2e
-
-# Copy E2E test module (separate from main module)
-COPY tests/e2e/go.mod tests/e2e/go.sum ./
-RUN go mod download
-
-COPY tests/e2e/*.go ./
-
-# Copy linux binary
-COPY --from=builder /out/amd64/linux/cli-tool /usr/local/bin/cli-tool
-
-# Run E2E tests
-RUN CLI_BINARY_PATH=/usr/local/bin/cli-tool go test -v ./...
-
-#---------------------------------------------------------------
+#---------------------------------------------------------------------
 FROM scratch AS export
+
 COPY --from=builder /out/ .
