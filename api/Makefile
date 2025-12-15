@@ -9,6 +9,7 @@ help: ## Show this help
 
 build: ## Build Docker image
 	./build/build.sh
+	docker system prune -f
 
 # test: build ## Run E2E tests via docker-compose
 # 	docker compose up --build --abort-on-container-exit --exit-code-from e2e-tests
