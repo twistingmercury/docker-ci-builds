@@ -1,4 +1,4 @@
-# Time API - Service CI Pattern Example
+# UUID API - Service CI Pattern Example
 
 > **Maturity Level**: Emerging - Demonstration of Docker CI for services
 
@@ -42,7 +42,7 @@ That script handles everything:
 The Dockerfile (`build/Dockerfile`) has two stages:
 
 - **builder**: Downloads dependencies, runs unit tests, compiles the binary
-- **runtime**: A minimal alpine image with just the binary
+- **runtime**: A scratch image with just the binary (no OS, no shell)
 
 Unit tests run during the build stage via `RUN go test -v ./...`. If tests
 fail, the build fails - you don't get an image. Simple as that.
@@ -60,14 +60,14 @@ The `tests/docker-compose.yaml` handles E2E testing:
 ```yaml
 services:
   api:
-    image: time-api:latest
+    image: uuid_api:latest
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      test: ["CMD", "/uuid_api", "--health"]
       interval: 2s
       timeout: 5s
       retries: 5
 
-  e2e-tests:
+  tests:
     build:
       context: ./e2e
     depends_on:
@@ -77,12 +77,12 @@ services:
 
 A few patterns worth noting:
 
-- **Health check**: The API service defines a health check that docker-compose
-  monitors
+- **Health check**: The binary supports a `--health` flag that performs a
+  self-check. This works with scratch images since no external tools are needed
 - **depends_on with condition**: E2E tests wait for `service_healthy`, not
   just container start (this is key - the container starting isn't the same
   as the service being ready)
-- **exit-code-from**: The build script uses `--exit-code-from e2e-tests` to
+- **exit-code-from**: The build script uses `--exit-code-from tests` to
   propagate test failures to CI
 
 ## Key Considerations
@@ -116,7 +116,7 @@ BUILD_VER=v1.0.0 BUILD_DATE=2025-01-01 BUILD_COMMIT=abc123 ./build/build.sh
 If you want to run the service manually after building:
 
 ```bash
-docker run -p 8080:8080 time-api:latest
+docker run --rm -p 8080:8080 uuid_api:latest
 ```
 
 ### Testing
@@ -127,17 +127,6 @@ Tests fall into two categories:
 - **E2E tests**: Run via docker-compose against the running container
 
 The build script runs both automatically, so you don't have to think about it.
-
-### Local Module Dependencies
-
-The API imports timelib from this same repository. The Dockerfile handles this by:
-
-1. Copying timelib into the build context
-2. Using `go mod edit -replace` to point to the local copy
-3. Running `go mod tidy` to update checksums
-
-This is why the build script uses the parent directory as build context - it needs
-access to both api/ and timelib/ directories.
 
 ### Versioning
 

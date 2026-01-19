@@ -69,7 +69,7 @@ Build metadata (version, date, commit) gets passed as build args.
 
 The `tests/docker-compose.yaml` orchestrates E2E testing:
 
-- Starts the `time-api` service (from the api/ project)
+- Starts the `uuid_api` service (from the api/ project)
 - Builds a test container that includes the exported linux binary
 - Tests the CLI against the running API
 
@@ -87,10 +87,12 @@ something fresh.
 - Unit tests run inside the Dockerfile during build
 - E2E tests run against the exported binary, not a fresh build
 - The export stage uses `scratch` as a base (no OS, just files)
-- E2E tests need the time-api service running - you must build the API project
+- E2E tests need the uuid_api service running - you must build the API project
   first (`cd ../api && ./build/build.sh`) before running CLI E2E tests
-- The docker-compose.yaml references the `time-api:latest` image, so it must
+- The docker-compose.yaml references the `uuid_api:latest` image, so it must
   exist locally
+- The API healthcheck uses the binary's built-in `--health` flag:
+  `["CMD", "/uuid_api", "--health"]`
 
 ## Development Considerations
 
