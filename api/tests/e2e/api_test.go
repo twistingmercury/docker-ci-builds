@@ -6,30 +6,36 @@ import (
 	"os"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func getAPIURL() string {
+func getApiURL() string {
 	if url := os.Getenv("API_URL"); url != "" {
 		return url
 	}
 	return "http://localhost:8080"
 }
 
-func TestGetTime(t *testing.T) {
-	// Make GET request to /api/time
-	resp, err := http.Get(getAPIURL() + "/api/time")
+func TestGetUUID(t *testing.T) {
+	resp, err := http.Get(getApiURL() + "/api/uuid")
 	require.NoError(t, err, "failed to make request")
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	// Verify 200 status code
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 	// Verify response has "time" field
-	var result map[string]interface{}
+	var result map[string]string
 	err = json.NewDecoder(resp.Body).Decode(&result)
 	require.NoError(t, err, "failed to decode response")
-
-	assert.Contains(t, result, "time", "response should contain 'time' field")
+	assert.Contains(t, result, "uuid", "response should contain 'uuid' field")
+	empty := uuid.UUID{}
+	value := result["uuid"]
+	t.Logf("%s\n", empty.String())
+	t.Logf("%s\n", value)
+	assert.NotEqual(t, empty, value)
 }

@@ -22,7 +22,7 @@ var timeCmd = &cobra.Command{
 var timeApiURL string
 
 type TimeResponse struct {
-	Time string `json:time`
+	Time string `json:"time"`
 }
 
 func TimeCmd() *cobra.Command {
@@ -31,15 +31,6 @@ func TimeCmd() *cobra.Command {
 
 func init() {
 	timeApiURL = os.Getenv("TIME_API_URL")
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// versionCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// versionCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
 func Run(cmd *cobra.Command, args []string) error {
@@ -51,7 +42,9 @@ func Run(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to get the time: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

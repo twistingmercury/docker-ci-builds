@@ -72,6 +72,8 @@ fix_markdown_lint.py
 
 # MkDocs
 site/
+.out/
+.bin/
 
 # Go workspace
 go.work.sum

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-API_URL="${API_URL:-http://api:8080}"
+API_URL="${API_URL:-http://uuid_api:8080}"
 MAX_RETRIES="${MAX_RETRIES:-30}"
 RETRY_INTERVAL="${RETRY_INTERVAL:-1}"
 
@@ -11,7 +11,7 @@ echo ""
 
 echo "Waiting for API to be ready..."
 for i in $(seq 1 "${MAX_RETRIES}"); do
-    if curl -sf "${API_URL}/api/time" > /dev/null 2>&1; then
+    if curl -sf "${API_URL}/api/uuid" > /dev/null 2>&1; then
         echo "API is ready (attempt ${i}/${MAX_RETRIES})"
         break
     fi

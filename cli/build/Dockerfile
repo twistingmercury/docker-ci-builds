@@ -1,4 +1,4 @@
-FROM golang:1.25-alpine AS builder
+FROM ghcr.io/twistingmercury/golang-tooling:v1.0-go1.25-alpine AS builder
 
 RUN apk add --no-cache git bash
 
@@ -11,15 +11,21 @@ ARG LD_FLAGS="-s -w -X 'github.com/twistingmercury/cli-tool-build/cmd/version.ve
 WORKDIR /workspace
 
 COPY go.mod go.sum ./
-RUN go mod download
+RUN go mod tidy
 
 COPY . .
 
+## Run linters, formatters, security scanners, etc
+RUN goimports -w .
+RUN golangci-lint run
+RUN govulncheck ./...
+RUN gosec ./...
+
 RUN go test -v ./cmd/version/version_test.go
 
-RUN CGO_ENABLED=0 GOARCH=amd64 GOOS=darwin go build --ldflags "${LD_FLAGS}" -o /out/amd64/darwin/cli-tool ./cmd/main.go
-RUN CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build --ldflags "${LD_FLAGS}" -o /out/amd64/linux/cli-tool ./cmd/main.go
-RUN CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build --ldflags "${LD_FLAGS}" -o /out/amd64/windows/cli-tool.exe ./cmd/main.go
+RUN CGO_ENABLED=0 GOARCH=amd64 GOOS=darwin go build --ldflags "${LD_FLAGS}" -o /out/amd64/darwin/cli-tool ./cmd/main/main.go
+RUN CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build --ldflags "${LD_FLAGS}" -o /out/amd64/linux/cli-tool ./cmd/main/main.go
+RUN CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build --ldflags "${LD_FLAGS}" -o /out/amd64/windows/cli-tool.exe ./cmd/main/main.go
 
 
 #---------------------------------------------------------------------

@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJ_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-IMAGE_NAME="${IMAGE_NAME:-time-api}"
+IMAGE_NAME="${IMAGE_NAME:-uuid_api}"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
 
 BUILD_VER="${BUILD_VER:-$(git -C "${PROJ_ROOT}" describe --tags --abbrev=0 2>/dev/null || echo 'dev')}"
@@ -22,15 +22,15 @@ build_api(){
         --tag "${IMAGE_NAME}:${IMAGE_TAG}" \
         "$(cd "${PROJ_ROOT}/.." && pwd)"
 
-   
+
     printf "\nImage: %s:%s\n" "${IMAGE_NAME}" "${IMAGE_TAG}"
     docker images "${IMAGE_NAME}:${IMAGE_TAG}" --format "Size: {{.Size}}"
 }
 
 e2e_tests(){
     printf "\n=== starting end-to-end tests ===\n"
-    docker compose -f "${PROJ_ROOT}/tests/docker-compose.yaml" up --exit-code-from e2e-tests
-    docker compose -f "${PROJ_ROOT}/tests/docker-compose.yaml" down > /dev/null 2>&1
+    docker compose -f "${PROJ_ROOT}/tests/docker-compose.yaml" up --remove-orphans --exit-code-from tests
+    docker compose -f "${PROJ_ROOT}/tests/docker-compose.yaml" --remove-orphans down > /dev/null 2>&1
 }
 
 main(){

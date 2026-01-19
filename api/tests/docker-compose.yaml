@@ -1,20 +1,20 @@
 services:
   api:
-    image: time-api:latest
-    container_name: time-api
+    image: uuid_api:latest
+    container_name: uuid_api
     ports:
       - "8080:8080"
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      test: ["CMD", "/uuid_api", "--health"]
       interval: 2s
       timeout: 5s
       retries: 5
 
-  e2e-tests:
+  tests:
     build:
       context: ./e2e
       dockerfile: Dockerfile
-    container_name: e2e-tests
+    container_name: tests
     environment:
       - API_URL=http://api:8080
     depends_on:
