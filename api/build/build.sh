@@ -30,7 +30,7 @@ build_api(){
 e2e_tests(){
     printf "\n=== starting end-to-end tests ===\n"
     docker compose -f "${PROJ_ROOT}/tests/docker-compose.yaml" up --remove-orphans --exit-code-from tests
-    docker compose -f "${PROJ_ROOT}/tests/docker-compose.yaml" --remove-orphans down > /dev/null 2>&1
+    docker compose -f "${PROJ_ROOT}/tests/docker-compose.yaml" down --remove-orphans > /dev/null 2>&1 || true
 }
 
 main(){

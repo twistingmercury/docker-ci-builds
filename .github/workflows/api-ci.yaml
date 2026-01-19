@@ -5,13 +5,11 @@ on:
     branches: [develop]
     paths:
       - "api/**"
-      - "timelib/**"
       - ".github/workflows/api-ci.yaml"
   pull_request:
     branches: [develop]
     paths:
       - "api/**"
-      - "timelib/**"
       - ".github/workflows/api-ci.yaml"
   workflow_dispatch:
 
