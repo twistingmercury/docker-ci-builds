@@ -114,17 +114,8 @@ export_binaries() {
 
 run_e2e_tests() {
     log_info "Running E2E tests..."
-
-    if ! docker compose -f "${PROJ_ROOT}/tests/docker-compose.yaml" up \
-        --build \
-        --exit-code-from e2e-tests; then
-        log_error "E2E tests failed"
-        docker compose -f "${PROJ_ROOT}/tests/docker-compose.yaml" down > /dev/null 2>&1
-        return 1
-    fi
-
-    docker compose -f "${PROJ_ROOT}/tests/docker-compose.yaml" down > /dev/null 2>&1
-    log_success "E2E tests passed"
+    docker compose -f "${PROJ_ROOT}/tests/docker-compose.yaml" up --remove-orphans --exit-code-from tests
+    docker compose -f "${PROJ_ROOT}/tests/docker-compose.yaml" down --remove-orphans > /dev/null 2>&1 || true
     return 0
 }
 #---------------------------------------------------------------

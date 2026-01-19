@@ -33,7 +33,7 @@ jobs:
             --build-arg BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
             --build-arg BUILD_COMMIT=${{ github.sha }} \
             --target runtime \
-            --tag time-api:latest \
+            --tag uuid_api:latest \
             ..
 
       - name: Run build script
