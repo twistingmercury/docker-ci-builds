@@ -6,7 +6,6 @@ FROM ghcr.io/twistingmercury/golang-tooling:v1.0-go1.25-alpine AS builder
 ARG BUILD_VER=dev
 ARG BUILD_DATE=unknown
 ARG BUILD_COMMIT=unknown
-ARG BIN_NAME=uuid_api
 
 WORKDIR /workspace
 
@@ -29,7 +28,7 @@ ARG LD_FLAGS="-s -w \
     -X 'main.GitCommit=${BUILD_COMMIT}'"
 
 RUN go test -v ./...
-RUN CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags "${LD_FLAGS}" -o /out/${BIN_NAME} ./cmd/main/main.go
+RUN CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags "${LD_FLAGS}" -o /out/uuid_api ./cmd/main/main.go
 
 
 #------------------------------------------------------------
@@ -37,7 +36,7 @@ RUN CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags "${LD_FLAGS}" -o /ou
 #------------------------------------------------------------
 FROM scratch AS runtime
 
-COPY --from=builder /out/${BIN_NAME}  /${BIN_NAME}
+COPY --from=builder /out/uuid_api  /uuid_api
 
 EXPOSE 8080
 
