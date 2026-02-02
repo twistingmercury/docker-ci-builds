@@ -11,19 +11,20 @@ about CI patterns, not application code.
 Build and test the API:
 
 ```bash
-cd api && ./build/build.sh
+make api
 ```
 
 Build and test the CLI (requires API to be built first):
 
 ```bash
-cd cli && make build
+make cli
 ```
 
-Both build scripts accept version metadata overrides:
+Both builds accept version metadata overrides:
 
 ```bash
-BUILD_VER=v1.0.0 BUILD_DATE=2025-01-01 BUILD_COMMIT=abc123 ./build/build.sh
+BUILD_VER=v1.0.0 BUILD_DATE=2025-01-01 BUILD_COMMIT=abc123 make api
+BUILD_VER=v1.0.0 BUILD_DATE=2025-01-01 BUILD_COMMIT=abc123 make cli
 ```
 
 If you want to run the API manually after building:
@@ -81,10 +82,10 @@ the service to actually be ready, not just started.
 **Build and test:**
 
 ```bash
-cd api && ./build/build.sh
+make api
 ```
 
-The script builds the image with `--no-cache` for reproducibility, starts the
+The build script runs with `--no-cache` for reproducibility, starts the
 container via docker-compose, waits for health checks, runs E2E tests, and
 tears down. Version metadata (from git tags) gets embedded via ldflags.
 
@@ -133,7 +134,7 @@ from `.bin/amd64/linux/`.
 **Build and test:**
 
 ```bash
-cd cli && make build
+make cli
 ```
 
 This builds all platform binaries and runs E2E tests. You'll find binaries in
@@ -254,15 +255,15 @@ in each Dockerfile.
 ### Quick Start
 
 1. Clone the repository
-2. Build the API: `cd api && ./build/build.sh`
-3. Build the CLI: `cd cli && make build`
+2. Build the API: `make api`
+3. Build the CLI: `make cli`
 
 ### Building & Running
 
 **API service:**
 
 ```bash
-cd api && ./build/build.sh
+make api
 ```
 
 This builds the Docker image, runs all quality checks and tests, then starts
@@ -278,7 +279,7 @@ docker run --rm -p 8080:8080 uuid_api:latest
 **CLI tool:**
 
 ```bash
-cd cli && make build
+make cli
 ```
 
 This builds binaries for all platforms (darwin, linux, windows) and runs E2E
@@ -316,5 +317,6 @@ ldflags.
 To override version metadata:
 
 ```bash
-BUILD_VER=v1.0.0 BUILD_DATE=2025-01-01 BUILD_COMMIT=abc123 ./build/build.sh
+BUILD_VER=v1.0.0 BUILD_DATE=2025-01-01 BUILD_COMMIT=abc123 make api
+BUILD_VER=v1.0.0 BUILD_DATE=2025-01-01 BUILD_COMMIT=abc123 make cli
 ```
