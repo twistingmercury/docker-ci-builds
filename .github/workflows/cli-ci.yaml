@@ -1,6 +1,10 @@
 name: CLI CI
 
 on:
+  workflow_run:
+    workflows: ["API CI"]
+    types: [completed]
+    branches: [develop]
   push:
     branches: [develop]
     paths:
@@ -13,9 +17,14 @@ on:
       - ".github/workflows/cli-ci.yaml"
   workflow_dispatch:
 
+permissions:
+  contents: read
+  actions: write
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     defaults:
       run:
         working-directory: cli
@@ -24,17 +33,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build API image (dependency for E2E tests)
-        working-directory: api
+      - name: Download API image artifact
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v4
+        with:
+          name: uuid-api-image
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: /tmp
+
+      - name: Load API image from artifact
+        if: github.event_name == 'workflow_run'
         run: |
-          docker build --rm \
-            --file build/Dockerfile \
-            --build-arg BUILD_VER=ci \
-            --build-arg BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
-            --build-arg BUILD_COMMIT=${{ github.sha }} \
-            --target runtime \
-            --tag uuid_api:latest \
-            ..
+          docker load -i /tmp/uuid_api.tar
+          docker images uuid_api:latest
 
       - name: Run build script
         run: ./build/build.sh
