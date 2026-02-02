@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - "api/**"
+      - "cli/**"
+      - ".github/workflows/ci.yaml"
+  pull_request:
+    branches: [develop]
+    paths:
+      - "api/**"
+      - "cli/**"
+      - ".github/workflows/ci.yaml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build API
+        working-directory: api
+        run: ./build/build.sh
+
+      - name: Build CLI
+        working-directory: cli
+        run: ./build/build.sh
